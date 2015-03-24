@@ -112,25 +112,7 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
                                                       gr::filter::firdes::WIN_BLACKMAN_HARRIS);
             } else {
             	std::cout << " CRAP!! " << std::endl;
-            	/*
-                float halfband = 0.5;
-                float bw = percent*halfband;
-                float tb = (percent/2.0)*halfband;
-                float ripple = 0.1;
-
-                bool made = False;
-                while not made:
-                    try:
-                        self._taps = optfir.low_pass(self._size, self._size, bw, bw+tb, ripple, atten)
-                        made = True
-                    except RuntimeError:
-                        ripple += 0.01
-                        made = False
-                        print("Warning: set ripple to %.4f dB. If this is a problem, adjust the attenuation or create your own filter taps." % (ripple))
-
-                        # Build in an exit strategy; if we've come this far, it ain't working.
-                        if(ripple >= 1.0):
-                            raise RuntimeError("optfir could not generate an appropriate filter.")*/
+  
                     }
 
 

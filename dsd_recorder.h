@@ -38,6 +38,15 @@
 #include <gnuradio/blocks/null_sink.h>
 #include <gnuradio/blocks/copy.h>
 
+#include <op25_repeater/gardner_costas_cc.h>
+#include <gnuradio/filter/pfb_arb_resampler_ccf.h>
+#include <gnuradio/analog/sig_source_c.h>
+#include <gnuradio/analog/feedforward_agc_cc.h>
+
+#include <gnuradio/digital/diff_phasor_cc.h>
+
+#include <gnuradio/blocks/complex_to_arg.h>
+
 //Valve
 //#include <gnuradio/blocks/null_sink.h>
 //#include <gnuradio/blocks/null_source.h>
@@ -96,8 +105,8 @@ private:
 
 	bool iam_logging;
 	bool active;
-	std::vector<float> lpf_taps;
-	std::vector<float> resampler_taps;
+	std::vector<float> lpf_coeffs;
+	std::vector<float> arb_taps;
 	std::vector<float> sym_taps;
 
 	/* GR blocks */
@@ -124,6 +133,20 @@ private:
 	gr::blocks::head::sptr head_source;
 	gr::blocks::copy::sptr valve;
 	//gr_kludge_copy_sptr copier;
+
+
+	gr::analog::sig_source_c::sptr lo;
+
+gr::digital::diff_phasor_cc::sptr diffdec;
+
+
+	gr::filter::pfb_arb_resampler_ccf::sptr arb_resampler;
+	gr::analog::feedforward_agc_cc::sptr agc;
+	gr::op25_repeater::gardner_costas_cc::sptr costas_clock;
+	gr::blocks::multiply_const_ff::sptr multiplier;
+	gr::blocks::multiply_const_ff::sptr rescale;
+	gr::blocks::multiply_const_ff::sptr baseband_amp;
+	gr::blocks::complex_to_arg::sptr to_float;
 
 };
 
