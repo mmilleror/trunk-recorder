@@ -121,7 +121,7 @@ const double pi = M_PI;
 	}
 	sym_filter = gr::filter::fir_filter_fff::make(1, sym_taps);
 	iam_logging = false;
-	dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_GFSK,4,1,1, false, num);
+	dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_QPSK,4,1,1, false, num);
 
 	tm *ltm = localtime(&starttime);
 
@@ -144,8 +144,7 @@ const double pi = M_PI;
 		connect(agc, 0, costas_clock, 0);
 		connect(costas_clock,0, diffdec, 0);
 		connect(diffdec, 0, to_float, 0);
-		connect(to_float,0, rescale, 0);
-		connect(rescale, 0, dsd, 0);
+		connect(to_float,0, dsd, 0);
 		connect(dsd, 0, wav_sink,0);
 }
 
