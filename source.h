@@ -4,7 +4,7 @@
 #include <gnuradio/basic_block.h>
 #include <gnuradio/top_block.h>
 #include <osmosdr/source.h>
-#include <gnuradio/uhd/usrp_source.h>
+
 
 #define DSD
 
@@ -30,8 +30,6 @@ class Source
 
 #ifdef DSD
 	std::vector<dsd_recorder_sptr> digital_recorders;
-#else
-	std::vector<p25_recorder_sptr> digital_recorders;
 #endif
 	std::vector<debug_recorder_sptr> debug_recorders;
 	std::vector<analog_recorder_sptr> analog_recorders;
@@ -71,9 +69,6 @@ public:
 		return boost::dynamic_pointer_cast<osmosdr::source, gr::basic_block>(p);
 	}
 
-	inline gr::uhd::usrp_source::sptr cast_to_usrp_sptr(gr::basic_block_sptr p)
-	{
-		return boost::dynamic_pointer_cast<gr::uhd::usrp_source, gr::basic_block>(p);
-	}
+	
 };
 #endif

@@ -5,10 +5,7 @@
 void Source::set_antenna(std::string ant)
 {
 	antenna = ant;
-	if (driver == "usrp") {
-		BOOST_LOG_TRIVIAL(info) << "Setting antenna to [" << antenna << "]";
-		cast_to_usrp_sptr(source_block)->set_antenna(antenna,0);
-	}
+	
 }
 std::string Source::get_antenna() {
 	return antenna;
