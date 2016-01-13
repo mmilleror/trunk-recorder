@@ -189,7 +189,7 @@ void start_recorder() {
     Recorder *recorder1;
 
     recorder1 = source->get_digital_recorder(0);
-    recorder1->activate( message.talkgroup,message.freq, calls.size());
+    recorder1->activate( 1,856000000, calls.size());
     call->set_recorder(recorder1);
     call->set_recording(true);
 }
@@ -372,6 +372,7 @@ int main(void)
         tb->start();
         start_recorder();
         monitor_messages();
+        stop_recorder();
         //------------------------------------------------------------------
         //-- stop flow graph execution
         //------------------------------------------------------------------
