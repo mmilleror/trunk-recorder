@@ -53,20 +53,14 @@ void Source::set_gain(int r)
 		gain = r;
 		cast_to_osmo_sptr(source_block)->set_gain(gain);
 	}
-	if (driver == "usrp") {
-		gain = r;
-		cast_to_usrp_sptr(source_block)->set_gain(gain);
-	}
+
 }
 int Source::get_gain() {
 	return gain;
 }
 void Source::set_if_gain(int i)
 {
-	if (driver == "osmosdr") {
-		if_gain = i;
-		cast_to_osmo_sptr(source_block)->set_if_gain(if_gain);
-	}
+
 }
 int Source::get_if_gain() {
 	return if_gain;
@@ -100,8 +94,6 @@ void Source::create_digital_recorders(gr::top_block_sptr tb, int r) {
 	for (int i = 0; i < max_digital_recorders; i++) {
 #ifdef DSD
 		dsd_recorder_sptr log = make_dsd_recorder( center, center, rate, 0, i);
-#else
-		p25_recorder_sptr log = make_p25_recorder( center, center, rate, 0, i);
 #endif
 		digital_recorders.push_back(log);
 		tb->connect(source_block, 0, log, 0);
@@ -139,9 +131,6 @@ int Source::get_num_available_recorders() {
 #ifdef DSD
 	for(std::vector<dsd_recorder_sptr>::iterator it = digital_recorders.begin(); it != digital_recorders.end(); it++) {
 		dsd_recorder_sptr rx = *it;
-#else
-	for(std::vector<p25_recorder_sptr>::iterator it = digital_recorders.begin(); it != digital_recorders.end(); it++) {
-		p25_recorder_sptr rx = *it;
 #endif
 		if (!rx->is_active())
 		{
@@ -164,9 +153,6 @@ Recorder * Source::get_digital_recorder(int priority)
 #ifdef DSD
 	for(std::vector<dsd_recorder_sptr>::iterator it = digital_recorders.begin(); it != digital_recorders.end(); it++) {
 		dsd_recorder_sptr rx = *it;
-#else
-	for(std::vector<p25_recorder_sptr>::iterator it = digital_recorders.begin(); it != digital_recorders.end(); it++) {
-		p25_recorder_sptr rx = *it;
 #endif
 		if (!rx->is_active())
 		{
@@ -203,21 +189,5 @@ Source::Source(double c, double r, double e, std::string drv, std::string dev)
 		BOOST_LOG_TRIVIAL(info) << "Tunning to " << center + error << "hz";
 		osmo_src->set_center_freq(center + error,0);
 		source_block = osmo_src;
-	}
-	if (driver == "usrp") {
-		gr::uhd::usrp_source::sptr usrp_src;
-		usrp_src = gr::uhd::usrp_source::make(device,uhd::stream_args_t("fc32"));
-
-		BOOST_LOG_TRIVIAL(info) << "SOURCE TYPE USRP (UHD)";
-
-		BOOST_LOG_TRIVIAL(info) << "Setting sample rate to: " << rate;
-		usrp_src->set_samp_rate(rate);
-		double actual_samp_rate = usrp_src->get_samp_rate();
-		BOOST_LOG_TRIVIAL(info) << "Actual sample rate: " << actual_samp_rate;
-		BOOST_LOG_TRIVIAL(info) << "Tunning to " << center + error << "hz";
-		usrp_src->set_center_freq(center + error,0);
-
-
-		source_block = usrp_src;
 	}
 }

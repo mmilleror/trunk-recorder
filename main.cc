@@ -1,4 +1,3 @@
-
 #define DSD
 
 #include <boost/property_tree/ptree.hpp>
@@ -30,12 +29,7 @@
 #include <time.h>
 #include "recorder.h"
 
-#ifdef DSD
-#include "dsd_recorder.h"
-#endif
-
 #include "p25_recorder.h"
-
 
 #include "analog_recorder.h"
 #include "smartnet_trunking.h"
@@ -51,7 +45,6 @@
 
 #include <osmosdr/source.h>
 
-#include <gnuradio/uhd/usrp_source.h>
 #include <gnuradio/msg_queue.h>
 #include <gnuradio/message.h>
 #include <gnuradio/blocks/file_sink.h>

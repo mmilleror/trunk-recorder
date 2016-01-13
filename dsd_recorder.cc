@@ -57,8 +57,7 @@ dsd_recorder::dsd_recorder(double f, double c, long s, long t, int n)
 	sym_filter = gr::filter::fir_filter_fff::make(1, sym_taps);
 	lpf_second = gr::filter::fir_filter_fff::make(1,gr::filter::firdes::low_pass(1, 48000, 6000, 500));
 	iam_logging = false;
-	dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_GFSK,4,0,0, false, num);
-
+	
 	tm *ltm = localtime(&starttime);
 
 	std::stringstream path_stream;
@@ -77,8 +76,7 @@ dsd_recorder::dsd_recorder(double f, double c, long s, long t, int n)
 		connect(downsample_sig, 0, demod, 0);
 		connect(demod, 0, sym_filter, 0);
 		connect(sym_filter, 0, levels, 0);
-		connect(levels, 0, dsd, 0);
-		connect(dsd, 0, wav_sink,0);
+		connect(levels, 0,  wav_sink,0);
 }
 
 dsd_recorder::~dsd_recorder() {
@@ -130,45 +128,6 @@ void dsd_recorder::deactivate() {
 
 	//unlock();
 
-
-	dsd_state *state = dsd->get_state();
-	ofstream myfile (status_filename);
-	if (myfile.is_open())
-	{
-		int level = (int) state->max / 164;
-		int index=0;
-		myfile << "{\n";
-		myfile << "\"freq\": " << freq << ",\n";
-		myfile << "\"num\": " << num << ",\n";
-		myfile << "\"talkgroup\": " << talkgroup << ",\n";
-		myfile << "\"center\": " << state->center << ",\n";
-		myfile << "\"umid\": " << state->umid << ",\n";
-		myfile << "\"lmid\": " << state->lmid << ",\n";
-		myfile << "\"max\": " << state->max << ",\n";
-		myfile << "\"inlvl\": " << level << ",\n";
-		myfile << "\"nac\": " << state->nac << ",\n";
-		myfile << "\"src\": " << state->lastsrc << ",\n";
-		myfile << "\"dsdtg\": " << state->lasttg << ",\n";
-		myfile << "\"headerCriticalErrors\": " << state->debug_header_critical_errors << ",\n";
-		myfile << "\"headerErrors\": " << state->debug_header_errors << ",\n";
-		myfile << "\"audioErrors\": " << state->debug_audio_errors << ",\n";
-		myfile << "\"symbCount\": " << state->symbolcnt << ",\n";
-		myfile << "\"mode\": \"digital\",\n";
-		myfile << "\"srcList\": [ ";
-		while(state->src_list[index]!=0) {
-			if (index !=0) {
-				myfile << ", " << state->src_list[index];
-			} else {
-				myfile << state->src_list[index];
-			}
-			index++;
-		}
-		myfile << " ]\n";
-		myfile << "}\n";
-		myfile.close();
-	}
-	else BOOST_LOG_TRIVIAL(error) << "Unable to open file";
-	dsd->reset_state();
 }
 
 void dsd_recorder::activate( long t, double f, int n) {
