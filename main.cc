@@ -62,6 +62,8 @@ gr::top_block_sptr tb;
 smartnet_trunking_sptr smartnet_trunking;
 gr::msg_queue::sptr queue;
 Source *source;
+Recorder *recorder1;
+Recorder *recorder2;
 
 volatile sig_atomic_t exit_flag = 0;
 SmartnetParser *smartnet_parser;
@@ -184,7 +186,7 @@ void load_config()
 
 void start_recorder() {
 
-    Recorder *recorder1;
+    
 
     recorder1 = source->get_digital_recorder(0);
     recorder1->activate( 1,856000000, calls.size());
