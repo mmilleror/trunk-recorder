@@ -92,8 +92,11 @@ void Source::create_digital_recorders(gr::top_block_sptr tb, int r) {
 #ifdef DSD
 		dsd_recorder_sptr log = make_dsd_recorder( center, center, rate, 0, i);
 #endif
+        BOOST_LOG_TRIVIAL(info) << "created it!";
 		digital_recorders.push_back(log);
+        BOOST_LOG_TRIVIAL(info) << "pushed it!";
 		tb->connect(source_block, 0, log, 0);
+        BOOST_LOG_TRIVIAL(info) << "connected it!";
 	}
 }
 void Source::create_debug_recorders(gr::top_block_sptr tb, int r) {
