@@ -189,11 +189,14 @@ void start_recorder() {
     
 
     recorder1 = source->get_digital_recorder(0);
-    recorder1->activate( 1,856000000, calls.size());
+    recorder1->activate( 1,856800000, calls.size());
+    recorder2 = source->get_digital_recorder(0);
+    recorder2->activate( 1,856800000, calls.size());
 
 }
 void stop_recorder() {
 recorder1->deactivate();
+    recorder2->deactivate();
   
 }
 
