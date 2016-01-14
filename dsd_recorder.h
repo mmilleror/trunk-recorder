@@ -115,7 +115,6 @@ private:
 	gr::filter::rational_resampler_base_fff::sptr upsample_audio;
 	//gr::analog::quadrature_demod_cf::sptr demod;
 	gr::analog::quadrature_demod_cf::sptr demod;
-	dsd_block_ff_sptr dsd;
 	gr::blocks::nonstop_wavfile_sink::sptr wav_sink;
 	gr::blocks::file_sink::sptr raw_sink;
 	gr::blocks::null_sink::sptr null_sink;

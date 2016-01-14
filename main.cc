@@ -60,7 +60,6 @@ std::string talkgroups_file;
 string system_type;
 gr::top_block_sptr tb;
 smartnet_trunking_sptr smartnet_trunking;
-p25_trunking_sptr p25_trunking;
 gr::msg_queue::sptr queue;
 Source *source;
 
