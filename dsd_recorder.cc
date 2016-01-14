@@ -34,7 +34,7 @@ dsd_recorder::dsd_recorder(double f, double c, long s, long t, int n)
 	double pre_channel_rate = samp_rate/decim;
 
 
-
+    BOOST_LOG_TRIVIAL(info) << "making recorder";    
 	lpf_taps =  gr::filter::firdes::low_pass(1, samp_rate, xlate_bandwidth/2, 5000, gr::filter::firdes::WIN_HAMMING);
 
 	prefilter = gr::filter::freq_xlating_fir_filter_ccf::make(decim,
@@ -70,7 +70,7 @@ dsd_recorder::dsd_recorder(double f, double c, long s, long t, int n)
 	wav_sink = gr::blocks::nonstop_wavfile_sink::make(filename,1,8000,16);
 	null_sink = gr::blocks::null_sink::make(sizeof(gr_complex));
 
-
+BOOST_LOG_TRIVIAL(info) << "Connecting recorder";
 		connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
 		connect(prefilter, 0, downsample_sig, 0);
@@ -78,6 +78,7 @@ dsd_recorder::dsd_recorder(double f, double c, long s, long t, int n)
 		connect(demod, 0, sym_filter, 0);
 		connect(sym_filter, 0, levels, 0);
 		connect(levels, 0,  wav_sink,0);
+        BOOST_LOG_TRIVIAL(info) << "finished recorder";
 }
 
 dsd_recorder::~dsd_recorder() {
