@@ -1,6 +1,6 @@
 { "sources": [
 {"center": 857000000.0,
-"rate": 2000000.0,
+"rate": 1000000.0,
 "error": 1400,
 "gain": 12,
 "antenna": "TX/RX",
