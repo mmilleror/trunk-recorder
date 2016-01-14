@@ -150,10 +150,8 @@ void load_config()
             source->set_if_gain(if_gain);
             source->set_bb_gain(bb_gain);
             source->set_gain(gain);
-            source->set_antenna(antenna);
             source->create_digital_recorders(tb, digital_recorders);
-            source->create_analog_recorders(tb, analog_recorders);
-            source->create_debug_recorders(tb, debug_recorders);
+
 
         }
 
