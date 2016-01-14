@@ -6,7 +6,6 @@ bool dsd_recorder::logging = false;
 
 dsd_recorder_sptr make_dsd_recorder(float freq, float center, long s, long t, int n)
 {
-    BOOST_LOG_TRIVIAL(info) << "Creating recorder";
 	return gnuradio::get_initial_sptr(new dsd_recorder(freq, center, s, t, n));
 }
 

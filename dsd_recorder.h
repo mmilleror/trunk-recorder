@@ -60,11 +60,13 @@ dsd_recorder_sptr make_dsd_recorder(float f, float c, long s, long t, int n);
 
 class dsd_recorder : public gr::hier_block2 , public Recorder
 {
-
+	friend dsd_recorder_sptr make_dsd_recorder(float f, float c, long s, long t, int n);
+protected:
+	dsd_recorder(double f, double c, long s, long t, int n);
 	
 public:
 	~dsd_recorder();
-    dsd_recorder(double f, double c, long s, long t, int n);
+
 
 	void tune_offset(double f);
 	void activate( long t, double f, int n);

@@ -138,4 +138,4 @@ set(CMAKE_CXX_FLAGS_DEBUG "-pthread -Wall")
 
 
 add_executable(recorder main.cc source.cc smartnet_trunking.cc  smartnet_parser.cc  call.cc smartnet_crc.cc smartnet_deinterleave.cc dsd_recorder.cc debug_recorder.cc analog_recorder.cc talkgroup.cc talkgroups.cc nonstop_wavfile_sink_impl.cc)
-target_link_libraries(recorder  ${GNURADIO_RUNTIME_LIBRARIES} ${GNURADIO_PMT_LIBRARIES} ${GNURADIO_FILTER_LIBRARIES} ${GNURADIO_DIGITAL_LIBRARIES} ${GNURADIO_ANALOG_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES} ${GNURADIO_BLOCKS_LIBRARIES} ${GROSMOSDR_LIBRARIES} ${Boost_LIBRARIES} itpp ncurses menu)
+target_link_libraries(recorder  ${GNURADIO_RUNTIME_LIBRARIES} ${GNURADIO_PMT_LIBRARIES} ${GNURADIO_FILTER_LIBRARIES} ${GNURADIO_DIGITAL_LIBRARIES} ${GNURADIO_ANALOG_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES} ${GNURADIO_BLOCKS_LIBRARIES} ${GROSMOSDR_LIBRARIES} ${Boost_LIBRARIES} )
