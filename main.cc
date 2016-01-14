@@ -289,34 +289,7 @@ void unit_check() {
     }
 }
 
-void handle_message(std::vector<TrunkMessage>  messages) {
-    for(std::vector<TrunkMessage>::iterator it = messages.begin(); it != messages.end(); it++) {
-        TrunkMessage message = *it;
 
-        switch(message.message_type) {
-            case GRANT:
-                assign_recorder(message);
-                break;
-            case UPDATE:
-                update_recorder(message);
-                break;
-            case CONTROL_CHANNEL:
-                add_control_channel(message.freq);
-                break;
-            case REGISTRATION:
-                break;
-            case DEREGISTRATION:
-                unit_deregistration(message.source);
-                break;
-            case AFFILIATION:
-                group_affiliation(message.source, message.talkgroup);
-                break;
-            case STATUS:
-            case UNKNOWN:
-                break;
-        }
-    }
-}
 
 void monitor_messages() {
     gr::message::sptr msg;
