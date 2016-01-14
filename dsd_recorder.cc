@@ -4,7 +4,7 @@ using namespace std;
 
 bool dsd_recorder::logging = false;
 
-dsd_recorder_sptr make_dsd_recorder(float freq, float center, long s, long t, int n)
+dsd_recorder_sptr dsd_recorder::make_dsd_recorder(float freq, float center, long s, long t, int n)
 {
 	return gnuradio::get_initial_sptr(new dsd_recorder(freq, center, s, t, n));
 }
