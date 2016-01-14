@@ -190,8 +190,7 @@ void start_recorder() {
 
     recorder1 = source->get_digital_recorder(0);
     recorder1->activate( 1,856000000, calls.size());
-    call->set_recorder(recorder1);
-    call->set_recording(true);
+
 }
 void stop_recorder() {
 recorder1->deactivate();
