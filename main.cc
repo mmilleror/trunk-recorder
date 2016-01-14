@@ -62,6 +62,7 @@ gr::top_block_sptr tb;
 smartnet_trunking_sptr smartnet_trunking;
 p25_trunking_sptr p25_trunking;
 gr::msg_queue::sptr queue;
+Source *source;
 
 volatile sig_atomic_t exit_flag = 0;
 SmartnetParser *smartnet_parser;
@@ -144,7 +145,7 @@ void load_config()
             BOOST_LOG_TRIVIAL(info) << "driver: " << node.second.get<std::string>("driver","");
 
 
-            Source *source = new Source(center,rate,error,driver,device);
+            source = new Source(center,rate,error,driver,device);
             BOOST_LOG_TRIVIAL(info) << "Max HZ: " << source->get_max_hz();
             BOOST_LOG_TRIVIAL(info) << "Min HZ: " << source->get_min_hz();
             source->set_if_gain(if_gain);
@@ -154,7 +155,7 @@ void load_config()
             source->create_digital_recorders(tb, digital_recorders);
             source->create_analog_recorders(tb, analog_recorders);
             source->create_debug_recorders(tb, debug_recorders);
-            sources.push_back(source);
+
         }
 
         BOOST_LOG_TRIVIAL(info) << "Control Channels: ";
