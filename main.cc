@@ -151,7 +151,7 @@ void load_config()
             source->set_bb_gain(bb_gain);
             source->set_gain(gain);
             source->create_digital_recorders(tb, digital_recorders);
-
+            BOOST_LOG_TRIVIAL(info) << "All done here: "; 
 
         }
 
