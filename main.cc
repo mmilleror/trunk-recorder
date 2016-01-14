@@ -68,7 +68,7 @@ Recorder *recorder2;
 volatile sig_atomic_t exit_flag = 0;
 SmartnetParser *smartnet_parser;
 
-Recorder *recorder1;
+
 
 void exit_interupt(int sig) { // can be called asynchronously
     exit_flag = 1; // set flag
