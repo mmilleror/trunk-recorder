@@ -31,6 +31,8 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 	double decim = floor(samp_rate / 100000);
 	float xlate_bandwidth = 7000; //14000; //24260.0;
 	float channel_rate = 4800 * samp_per_sym;
+         double input_rate = samp_rate;
+        float if_rate = 48000;
 	double pre_channel_rate = samp_rate/decim;
 
 
@@ -41,12 +43,40 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 	            lpf_taps,
 	            offset,
 	            samp_rate);
-	unsigned int d = GCD(channel_rate, pre_channel_rate);
-	channel_rate = floor(channel_rate  / d);
-	pre_channel_rate = floor(pre_channel_rate / d);
-	resampler_taps = design_filter(channel_rate, pre_channel_rate);
+        
+        
+        lpf_coeffs = gr::filter::firdes::low_pass(1.0, input_rate, 15000, 1500, gr::filter::firdes::WIN_HANN);
+        int decimation = int(input_rate / if_rate);
 
-	downsample_sig = gr::filter::rational_resampler_base_ccf::make(channel_rate, pre_channel_rate, resampler_taps);
+        prefilter = gr::filter::freq_xlating_fir_filter_ccf::make(decimation,
+	            lpf_coeffs,
+	            offset,
+	            samp_rate);
+        
+        float resampled_rate = float(input_rate) / float(decimation); // rate at output of self.lpf
+
+
+        float arb_rate = (float(if_rate) / resampled_rate);
+        float arb_size = 32;
+        float arb_atten=100; 
+        
+        float percent = 0.80;
+            if(arb_rate < 1) {
+                float halfband = 0.5* arb_rate;
+                float bw = percent*halfband;
+                float tb = (percent/2.0)*halfband;
+                float ripple = 0.1;
+
+                // As we drop the bw factor, the optfir filter has a harder time converging;
+                // using the firdes method here for better results.
+                arb_taps = gr::filter::firdes::low_pass_2(arb_size, arb_size, bw, tb, arb_atten,
+                                                      gr::filter::firdes::WIN_BLACKMAN_HARRIS);
+            } else {
+                BOOST_LOG_TRIVIAL(error) << "CRAP! Computer over!";
+            }
+        arb_resampler = gr::filter::pfb_arb_resampler_ccf::make(arb_rate, arb_taps );
+        
+
 	demod = gr::analog::quadrature_demod_cf::make(1.2); //1.6); //1.4);
 	levels = gr::blocks::multiply_const_ff::make(1.0); //.40); //33);
 	valve = gr::blocks::copy::make(sizeof(gr_complex));
@@ -74,8 +104,8 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 
 		connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
-		connect(prefilter, 0, downsample_sig, 0);
-		connect(downsample_sig, 0, demod, 0);
+		connect(prefilter, 0, arb_resampler, 0);
+		connect(arb_resampler, 0, demod, 0);
 		connect(demod, 0, sym_filter, 0);
 		connect(sym_filter, 0, levels, 0);
 		connect(levels, 0, dsd, 0);

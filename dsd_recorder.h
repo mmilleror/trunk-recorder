@@ -24,6 +24,7 @@
 #include <gnuradio/filter/fir_filter_fff.h>
 #include <gnuradio/filter/freq_xlating_fir_filter_ccf.h>
 #include <gnuradio/filter/firdes.h>
+#include <gnuradio/filter/pfb_arb_resampler_ccf.h>
 #include <gnuradio/filter/rational_resampler_base_ccc.h>
 #include <gnuradio/analog/quadrature_demod_cf.h>
 #include <gnuradio/analog/quadrature_demod_cf.h>
@@ -99,6 +100,10 @@ private:
 	bool active;
     
     Source *source;
+    
+    std::vector<float> lpf_coeffs;
+	std::vector<float> arb_taps;
+    gr::filter::pfb_arb_resampler_ccf::sptr arb_resampler;
     
 	std::vector<float> lpf_taps;
 	std::vector<float> resampler_taps;
