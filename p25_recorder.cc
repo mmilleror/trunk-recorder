@@ -3,9 +3,9 @@
 #include <boost/log/trivial.hpp>
 
 
-p25_recorder_sptr make_p25_recorder(double freq, double center, long s, long t, int n)
+p25_recorder_sptr make_p25_recorder(Source *src, long t, int n)
 {
-	return gnuradio::get_initial_sptr(new p25_recorder(freq, center, s, t, n));
+	return gnuradio::get_initial_sptr(new p25_recorder(src, t, n));
 }
 
 
@@ -37,19 +37,22 @@ std::vector<float> p25_recorder::design_filter(double interpolation, double deci
 
 
 
-p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
+p25_recorder::p25_recorder(Source *src, long t, int n)
 	: gr::hier_block2 ("p25_recorder",
 	                   gr::io_signature::make  (1, 1, sizeof(gr_complex)),
 	                   gr::io_signature::make  (0, 0, sizeof(float)))
 {
-	freq = f;
-	center = c;
+    source = src;
+	freq = source->get_center();
+	center = source->get_center();
+	long samp_rate = source->get_rate();
 	talkgroup = t;
-	long capture_rate = s;
+	long capture_rate = samp_rate;
+
 	num = n;
 	active = false;
 
-	float offset = f - center;
+	float offset = freq - center;
 
 
 
@@ -61,7 +64,7 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
 	double trans_width = 12500 / 2;
 	double trans_centre = trans_width + (trans_width / 2);
 	float symbol_deviation = 600.0;
-	bool fsk4 = true;
+	bool fsk4 = false;
 
 	std::vector<float> sym_taps;
 	const double pi = M_PI; //boost::math::constants::pi<double>();
@@ -77,13 +80,26 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
         float bb_gain = 1.0;
 
        	baseband_amp = gr::blocks::multiply_const_ff::make(bb_gain);
+        
+        int samp_per_sym = 10;
 
-        // local osc
-        lo = gr::analog::sig_source_c::make(input_rate, gr::analog::GR_SIN_WAVE, 0, 1.0, 0);
-        mixer = gr::blocks::multiply_cc::make();
-        lpf_coeffs = gr::filter::firdes::low_pass(1.0, input_rate, 15000, 1500, gr::filter::firdes::WIN_HANN);
+
+ 	float xlate_bandwidth = 10000; //14000; //24260.0
+
+
+  
+        
+	valve = gr::blocks::copy::make(sizeof(gr_complex));
+	valve->set_enabled(false);
+        
+        
+            lpf_coeffs = gr::filter::firdes::low_pass(1.0, input_rate, xlate_bandwidth/2, 1500, gr::filter::firdes::WIN_HANN);
         int decimation = int(input_rate / if_rate);
-        lpf = gr::filter::fir_filter_ccf::make(decimation, lpf_coeffs);
+
+        prefilter = gr::filter::freq_xlating_fir_filter_ccf::make(decimation,
+	            lpf_coeffs,
+	            offset,
+	            samp_rate);
 
         float resampled_rate = float(input_rate) / float(decimation); // rate at output of self.lpf
 
@@ -174,8 +190,6 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
 
 	double symbol_decim = 1;
 
-	valve = gr::blocks::copy::make(sizeof(gr_complex));
-	valve->set_enabled(false);
 
 	BOOST_LOG_TRIVIAL(info) << " FM Gain: " << fm_demod_gain << " PI: " << pi << " Samples per sym: " << samples_per_symbol;
 
@@ -201,7 +215,7 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
 	bool do_audio_output = 1;
 	bool do_tdma = 0;
 	op25_frame_assembler = gr::op25_repeater::p25_frame_assembler::make(wireshark_host,udp_port,verbosity,do_imbe, do_output, do_msgq, rx_queue, do_audio_output, do_tdma);
-	//op25_vocoder = gr::op25_repeater::vocoder::make(0, 0, 0, "", 0, 0);
+	op25_vocoder = gr::op25_repeater::vocoder::make(0, 0, 0, "", 0, 0);
 
 	converter = gr::blocks::short_to_float::make();
 	//converter = gr::blocks::char_to_float::make();
@@ -217,15 +231,13 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
 	wav_sink = gr::blocks::nonstop_wavfile_sink::make(filename,1,8000,16);
 
 
-
+    null_sink = gr::blocks::null_sink::make(sizeof(int16_t)); //sizeof(gr_complex));
 
 
 	if (fsk4) {
-		connect(self(),0, mixer, 0);
-		connect(lo,0, mixer, 1);
-		connect(mixer,0, valve,0);
-		connect(valve, 0, lpf, 0);
-		connect(lpf, 0, arb_resampler, 0);
+		connect(self(),0, valve,0);
+		connect(valve,0, prefilter,0);
+		connect(prefilter, 0, arb_resampler, 0);
 		connect(arb_resampler,0, fm_demod,0);
 		connect(fm_demod, 0, baseband_amp, 0);
 		connect(baseband_amp,0, sym_filter, 0);
@@ -236,19 +248,25 @@ p25_recorder::p25_recorder(double f, double c, long s, long t, int n)
 		connect(converter, 0, multiplier,0);
 		connect(multiplier, 0, wav_sink,0);
 	} else {
-		connect(self(),0, mixer, 0);
-		connect(lo,0, mixer, 1);
-		connect(mixer,0, valve,0);
-		connect(valve, 0, lpf, 0);
-		connect(lpf, 0, arb_resampler, 0);
+		connect(self(),0, valve,0);
+		connect(valve,0, prefilter,0);
+
+		connect(prefilter, 0, arb_resampler, 0);
 		connect(arb_resampler,0, agc,0);
 		connect(agc, 0, costas_clock, 0);
 		connect(costas_clock,0, diffdec, 0);
+
 		connect(diffdec, 0, to_float, 0);
-		connect(to_float,0, rescale, 0);
+
+		connect(to_float,0,  rescale, 0);
 		connect(rescale, 0, slicer, 0);
+
 		connect(slicer,0, op25_frame_assembler,0);
+        
+        //connect(op25_frame_assembler, 0, null_sink, 0);
+        
 		connect(op25_frame_assembler, 0,  converter,0);
+        
 		connect(converter, 0, multiplier,0);
 		connect(multiplier, 0, wav_sink,0);
 	}
@@ -269,6 +287,10 @@ double p25_recorder::get_freq() {
 	return freq;
 }
 
+Source *p25_recorder::get_source() {
+    return source;
+}
+
 char *p25_recorder::get_filename() {
 	return filename;
 }
@@ -285,8 +307,8 @@ long p25_recorder::elapsed() {
 void p25_recorder::tune_offset(double f) {
 	freq = f;
 	int offset_amount = (f - center);
-	lo->set_frequency(-offset_amount);
-	//prefilter->set_center_freq(offset_amount); // have to flip this for 3.7
+	//lo->set_frequency(-offset_amount);
+	prefilter->set_center_freq(offset_amount); // have to flip this for 3.7
 	//BOOST_LOG_TRIVIAL(info) << "Offset set to: " << offset_amount << " Freq: "  << freq;
 }
 
@@ -310,14 +332,23 @@ void p25_recorder::activate(long t, double f, int n, char *existing_filename) {
 	BOOST_LOG_TRIVIAL(info) << "p25_recorder.cc: Activating Logger [ " << num << " ] - freq[ " << freq << "] \t talkgroup[ " << talkgroup << " ]";
 
 	int offset_amount = (f - center);
-	lo->set_frequency(-offset_amount);
+    prefilter->set_center_freq(f - center);
+	//lo->set_frequency(-offset_amount);
 
 
 	std::stringstream path_stream;
 	path_stream << boost::filesystem::current_path().string() <<  "/" << 1900 + ltm->tm_year << "/" << 1 + ltm->tm_mon << "/" << ltm->tm_mday;
 
 	boost::filesystem::create_directories(path_stream.str());
-	sprintf(filename, "%s/%ld-%ld_%g.wav", path_stream.str().c_str(),talkgroup,starttime,f);
+    
+    if (existing_filename != NULL) {
+        strcpy(filename,existing_filename);
+    } else {
+	   sprintf(filename, "%s/%ld-%ld_%g.wav", path_stream.str().c_str(),talkgroup,starttime,f);
+    }
+
+	wav_sink->open(filename);
+
 
 	wav_sink->open(filename);
 	active = true;

@@ -69,18 +69,18 @@
 #include "recorder.h"
 #include "smartnet.h"
 
-
+class Source;
 class p25_recorder;
-
 typedef boost::shared_ptr<p25_recorder> p25_recorder_sptr;
+p25_recorder_sptr make_p25_recorder(Source *src, long t, int n);
 
-p25_recorder_sptr make_p25_recorder(double f, double c, long s, long t, int n);
+#include "source.h"
 
 class p25_recorder : public gr::hier_block2, public Recorder
 {
-	friend p25_recorder_sptr make_p25_recorder(double f, double c, long s, long t, int n);
+	friend p25_recorder_sptr make_p25_recorder(Source *src, long t, int n);
 protected:
-	p25_recorder(double f, double c, long s, long t, int n);
+	p25_recorder(Source *src, long t, int n);
 
 public:
 	~p25_recorder();
@@ -90,6 +90,7 @@ public:
 
 	void deactivate();
 	double get_freq();
+    Source *get_source();
 	bool is_active();
 	int lastupdate();
 	long elapsed();
@@ -114,7 +115,7 @@ private:
 
 	bool iam_logging;
 	bool active;
-
+    Source *source;
 
 	std::vector<float> lpf_coeffs;
 	std::vector<float> arb_taps;
@@ -140,10 +141,12 @@ gr::digital::diff_phasor_cc::sptr diffdec;
 	gr::analog::feedforward_agc_cc::sptr agc;
 
 	gr::blocks::nonstop_wavfile_sink::sptr wav_sink;
+    
+    gr::blocks::null_sink::sptr null_sink;
 
 	gr::blocks::short_to_float::sptr converter;
 	gr::blocks::copy::sptr valve;
-
+	gr::filter::freq_xlating_fir_filter_ccf::sptr prefilter;
 	gr::blocks::multiply_const_ff::sptr multiplier;
 	gr::blocks::multiply_const_ff::sptr rescale;
 	gr::blocks::multiply_const_ff::sptr baseband_amp;

@@ -21,15 +21,20 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 	talkgroup = t;
 	num = n;
 	active = false;
+    bool fsk4 = true;
 
 
 	starttime = time(NULL);
 
 	float offset = 0; //have to flip for 3.7
 
+	float symbol_rate = 4800;
+            float gain_mu = 0.025;
+        float costas_alpha = 0.04;
+    const double pi = M_PI;
 	int samp_per_sym = 10;
 	double decim = floor(samp_rate / 100000);
-	float xlate_bandwidth = 10000; //14000; //24260.0;
+	float xlate_bandwidth = 15000; //14000; //24260.0;
 	float channel_rate = 4800 * samp_per_sym;
          double input_rate = samp_rate;
         float if_rate = 48000;
@@ -37,7 +42,7 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 
 
 
-	lpf_taps =  gr::filter::firdes::low_pass(1, samp_rate, xlate_bandwidth/2, 5000, gr::filter::firdes::WIN_HAMMING);
+	lpf_taps =  gr::filter::firdes::low_pass(1, samp_rate, 15000, 1500, gr::filter::firdes::WIN_HAMMING);
 
 	prefilter = gr::filter::freq_xlating_fir_filter_ccf::make(decim,
 	            lpf_taps,
@@ -88,7 +93,6 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 	sym_filter = gr::filter::fir_filter_fff::make(1, sym_taps);
 	lpf_second = gr::filter::fir_filter_fff::make(1,gr::filter::firdes::low_pass(1, 48000, 6000, 500));
 	iam_logging = false;
-	dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_C4FM,4,0,0, false, num);
 
 	tm *ltm = localtime(&starttime);
 
@@ -102,14 +106,83 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 	null_sink = gr::blocks::null_sink::make(sizeof(gr_complex));
 
 
-		connect(self(),0, valve,0);
+        
+  float omega = float(if_rate) / float(symbol_rate);
+        float gain_omega = 0.1  * gain_mu * gain_mu;
+
+        float alpha = costas_alpha;
+        float beta = 0.125 * alpha * alpha;
+        float fmax = 2400;	// Hz
+        fmax = 2*pi * fmax / float(if_rate);
+
+        costas_clock = gr::op25_repeater::gardner_costas_cc::make(omega, gain_mu, gain_omega, alpha,  beta, fmax, -fmax);
+
+        agc = gr::analog::feedforward_agc_cc::make(16, 1.0);
+
+        // Perform Differential decoding on the constellation
+        diffdec = gr::digital::diff_phasor_cc::make();
+
+        // take angle of the difference (in radians)
+        to_float = gr::blocks::complex_to_arg::make();
+
+        // convert from radians such that signal is in -3/-1/+1/+3
+        rescale = gr::blocks::multiply_const_ff::make( (1 / (pi / 4)) ); 
+        const float l[] = { -2.0, 0.0, 2.0, 4.0 };
+	std::vector<float> leveler( l,l + sizeof( l ) / sizeof( l[0] ) );
+        	slicer = gr::op25_repeater::fsk4_slicer_fb::make(leveler);
+
+        
+  	if (fsk4) {
+        dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_QPSK,4,1,1, false, num);
+
+        connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
 		connect(prefilter, 0, arb_resampler, 0);
 		connect(arb_resampler, 0, demod, 0);
-		connect(demod, 0, sym_filter, 0);
-		connect(sym_filter, 0, levels, 0);
-		connect(levels, 0, dsd, 0);
+        connect(demod, 0, dsd, 0);
+		//connect(demod, 0, sym_filter, 0);
+		//connect(sym_filter, 0, levels, 0);
+		//connect(levels, 0, dsd, 0);
 		connect(dsd, 0, wav_sink,0);
+        
+        /*
+		connect(self(),0, valve,0);
+		connect(valve,0, prefilter,0);
+		connect(prefilter, 0, arb_resampler, 0);
+		connect(arb_resampler,0, fm_demod,0);
+		connect(fm_demod, 0, baseband_amp, 0);
+		connect(baseband_amp,0, sym_filter, 0);
+		connect(sym_filter, 0, fsk4_demod, 0);
+		connect(fsk4_demod, 0, slicer, 0);
+		connect(slicer,0, op25_frame_assembler,0);
+		connect(op25_frame_assembler, 0,  converter,0);
+		connect(converter, 0, multiplier,0);
+		connect(multiplier, 0, wav_sink,0);*/
+	} else {
+        dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_QPSK,4,1,1, false, num);
+		connect(self(),0, valve,0);
+		connect(valve,0, prefilter,0);
+
+		connect(prefilter, 0, arb_resampler, 0);
+		connect(arb_resampler,0, agc,0);
+        
+
+		connect(agc, 0, costas_clock, 0);
+		connect(costas_clock,0, diffdec, 0);
+
+		connect(diffdec, 0, to_float, 0);
+
+
+		connect(to_float,0,  rescale, 0);
+		connect(rescale, 0, slicer, 0);
+
+		connect(slicer,  0, dsd, 0);
+		connect(dsd, 0, wav_sink,0);
+        //connect(valve,0, slicer, 0);
+		//connect(slicer,0, op25_frame_assembler,0);
+        
+   
+	}
 }
 
 dsd_recorder::~dsd_recorder() {

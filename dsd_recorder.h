@@ -16,6 +16,12 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/log/trivial.hpp>
 
+#include <op25_repeater/fsk4_slicer_fb.h>
+#include <op25_repeater/gardner_costas_cc.h>
+#include <gnuradio/analog/feedforward_agc_cc.h>
+#include <gnuradio/digital/diff_phasor_cc.h>
+#include <gnuradio/blocks/complex_to_arg.h>
+
 #include <gnuradio/io_signature.h>
 #include <gnuradio/hier_block2.h>
 #include <gnuradio/blocks/multiply_const_ff.h>
@@ -110,6 +116,14 @@ private:
 	std::vector<float> sym_taps;
 
 	/* GR blocks */
+    	gr::analog::feedforward_agc_cc::sptr agc;
+    
+gr::digital::diff_phasor_cc::sptr diffdec;
+    	gr::blocks::multiply_const_ff::sptr rescale;
+  	gr::blocks::complex_to_arg::sptr to_float;
+	gr::op25_repeater::gardner_costas_cc::sptr costas_clock;
+	gr::op25_repeater::fsk4_slicer_fb::sptr slicer;
+
 	gr::filter::fir_filter_ccf::sptr lpf;
 	gr::filter::fir_filter_fff::sptr lpf_second;
 	gr::filter::fir_filter_fff::sptr sym_filter;
