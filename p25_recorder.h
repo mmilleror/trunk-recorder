@@ -31,6 +31,7 @@
 #include <gnuradio/analog/feedforward_agc_cc.h>
 
 #include <gnuradio/digital/diff_phasor_cc.h>
+#include <gnuradio/digital/costas_loop_cc.h>
 
 #include <gnuradio/blocks/complex_to_arg.h>
 
@@ -129,6 +130,7 @@ private:
 
 gr::digital::diff_phasor_cc::sptr diffdec;
 
+
 	gr::blocks::multiply_cc::sptr mixer;
 	gr::blocks::file_sink::sptr fs;
 
@@ -144,6 +146,7 @@ gr::digital::diff_phasor_cc::sptr diffdec;
     
     gr::blocks::null_sink::sptr null_sink;
 
+    //gr::blocks::char_to_float::sptr converter;
 	gr::blocks::short_to_float::sptr converter;
 	gr::blocks::copy::sptr valve;
 	gr::filter::freq_xlating_fir_filter_ccf::sptr prefilter;
@@ -157,7 +160,9 @@ gr::digital::diff_phasor_cc::sptr diffdec;
 	gr::op25_repeater::fsk4_slicer_fb::sptr slicer;
 	gr::op25_repeater::vocoder::sptr op25_vocoder;
 	gr::op25_repeater::gardner_costas_cc::sptr costas_clock;
+    gr::digital::costas_loop_cc::sptr costas;
 
+	gr::blocks::file_sink::sptr raw_sink;
 	unsigned GCD(unsigned u, unsigned v);
 	std::vector<float> design_filter(double interpolation, double deci);
 };

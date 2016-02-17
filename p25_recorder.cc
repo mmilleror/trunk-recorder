@@ -56,7 +56,7 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 
 
 
-	float symbol_rate = 4800;
+        float symbol_rate = 4800;
 	double samples_per_symbol = 10;
 	double system_channel_rate = symbol_rate * samples_per_symbol;
 	double prechannel_decim = floor(capture_rate / system_channel_rate);
@@ -73,7 +73,8 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 	starttime = time(NULL);
 
         double input_rate = capture_rate;
-        float if_rate = 48000;
+        
+        float if_rate = 24000;
         float gain_mu = 0.025;
         float costas_alpha = 0.04;
         double sps = 0.0;
@@ -158,7 +159,7 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
         arb_resampler = gr::filter::pfb_arb_resampler_ccf::make(arb_rate, arb_taps );
 
 
-
+        agc = gr::analog::feedforward_agc_cc::make(16, 1.0);
 
 
         float omega = float(if_rate) / float(symbol_rate);
@@ -170,15 +171,14 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
         fmax = 2*pi * fmax / float(if_rate);
 
         costas_clock = gr::op25_repeater::gardner_costas_cc::make(omega, gain_mu, gain_omega, alpha,  beta, fmax, -fmax);
-
-        agc = gr::analog::feedforward_agc_cc::make(16, 1.0);
+        costas = gr::digital::costas_loop_cc::make(	fmax, 4 );	
 
         // Perform Differential decoding on the constellation
         diffdec = gr::digital::diff_phasor_cc::make();
 
         // take angle of the difference (in radians)
         to_float = gr::blocks::complex_to_arg::make();
-
+/*
         // convert from radians such that signal is in -3/-1/+1/+3
         rescale = gr::blocks::multiply_const_ff::make( (1 / (pi / 4)) );
 
@@ -209,7 +209,7 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 	int udp_port = 0;
 	int verbosity = 10;
 	const char * wireshark_host="127.0.0.1";
-	bool do_imbe = 0;
+	bool do_imbe = 1;
 	bool do_output = 1;
 	bool do_msgq = 0;
 	bool do_audio_output = 1;
@@ -217,10 +217,13 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 	op25_frame_assembler = gr::op25_repeater::p25_frame_assembler::make(wireshark_host,udp_port,verbosity,do_imbe, do_output, do_msgq, rx_queue, do_audio_output, do_tdma);
 	op25_vocoder = gr::op25_repeater::vocoder::make(0, 0, 0, "", 0, 0);
 
-	converter = gr::blocks::short_to_float::make();
-	//converter = gr::blocks::char_to_float::make();
-	float convert_num = float(1.0)/float(32768.0);
-	multiplier = gr::blocks::multiply_const_ff::make(convert_num);
+	converter = gr::blocks::short_to_float::make(1, 8192.0);
+	//converter = gr::blocks::char_to_float::make(2);
+        
+	float convert_num = float(1.0)/float(8192.0);
+	//float convert_num = float(1.0)/float(32768.0);
+        
+	multiplier = gr::blocks::multiply_const_ff::make(convert_num);*/
 	tm *ltm = localtime(&starttime);
 
 	std::stringstream path_stream;
@@ -228,12 +231,12 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 
 	boost::filesystem::create_directories(path_stream.str());
 	sprintf(filename, "%s/%ld-%ld_%g.wav", path_stream.str().c_str(),talkgroup,timestamp,freq);
-	wav_sink = gr::blocks::nonstop_wavfile_sink::make(filename,1,8000,16);
-
-
+	//wav_sink = gr::blocks::nonstop_wavfile_sink::make(filename,1,8000,16);
+	raw_sink = gr::blocks::file_sink::make(sizeof(float), filename);
+        //raw_sink = gr::blocks::file_sink::make(sizeof(gr_complex), filename);
     null_sink = gr::blocks::null_sink::make(sizeof(int16_t)); //sizeof(gr_complex));
 
-
+/*
 	if (fsk4) {
 		connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
@@ -244,32 +247,38 @@ p25_recorder::p25_recorder(Source *src, long t, int n)
 		connect(sym_filter, 0, fsk4_demod, 0);
 		connect(fsk4_demod, 0, slicer, 0);
 		connect(slicer,0, op25_frame_assembler,0);
-		connect(op25_frame_assembler, 0,  converter,0);
+		connect(op25_frame_assembler, 0, converter,0);
 		connect(converter, 0, multiplier,0);
 		connect(multiplier, 0, wav_sink,0);
-	} else {
+	} else {*/
 		connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
 
 		connect(prefilter, 0, arb_resampler, 0);
 		connect(arb_resampler,0, agc,0);
-		connect(agc, 0, costas_clock, 0);
-		connect(costas_clock,0, diffdec, 0);
+        //connect(agc,0, raw_sink,0);
+		
+       /* connect(agc, 0, costas_clock, 0);
+		connect(costas_clock,0, diffdec, 0);*/
+
+        connect(agc, 0, costas, 0);
+		connect(costas,0, diffdec, 0);
 
 		connect(diffdec, 0, to_float, 0);
 
-		connect(to_float,0,  rescale, 0);
-		connect(rescale, 0, slicer, 0);
-
-		connect(slicer,0, op25_frame_assembler,0);
+		//connect(to_float,0,  rescale, 0);
+		//connect(rescale, 0, slicer, 0);
         
-        //connect(op25_frame_assembler, 0, null_sink, 0);
+        
+        connect(to_float,0, raw_sink,0);
+        
+	/*	connect(slicer,0, op25_frame_assembler,0);
+        
         
 		connect(op25_frame_assembler, 0,  converter,0);
         
-		connect(converter, 0, multiplier,0);
-		connect(multiplier, 0, wav_sink,0);
-	}
+		connect(converter, 0, wav_sink,0); */
+	//}
 }
 
 
@@ -317,7 +326,8 @@ void p25_recorder::deactivate() {
 
 	active = false;
 	valve->set_enabled(false);
-	wav_sink->close();
+	//wav_sink->close();
+    raw_sink->close();
 }
 
 void p25_recorder::activate(long t, double f, int n, char *existing_filename) {
@@ -344,13 +354,14 @@ void p25_recorder::activate(long t, double f, int n, char *existing_filename) {
     if (existing_filename != NULL) {
         strcpy(filename,existing_filename);
     } else {
-	   sprintf(filename, "%s/%ld-%ld_%g.wav", path_stream.str().c_str(),talkgroup,starttime,f);
+	   sprintf(filename, "%s/%ld-%ld_%g.raw", path_stream.str().c_str(),talkgroup,starttime,f);
     }
 
-	wav_sink->open(filename);
+	
 
-
-	wav_sink->open(filename);
+raw_sink->open(filename);
+	
+	//wav_sink->open(filename);
 	active = true;
 	valve->set_enabled(true);
 }

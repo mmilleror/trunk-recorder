@@ -1,0 +1,16 @@
+{ "sources": [
+{"center": 493000000.0,
+"rate": 8000000.0,
+"error": 700,
+"gain": 48,
+"antenna": "TX/RX",
+"digitalRecorders": 1,
+"driver": "usrp",
+"device": ""}
+],
+"system": {
+	"control_channels": [496537500],
+	"type": "smartnet"
+	},
+"talkgroupsFile": "ChanList.csv"
+}

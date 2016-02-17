@@ -34,7 +34,7 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
     const double pi = M_PI;
 	int samp_per_sym = 10;
 	double decim = floor(samp_rate / 100000);
-	float xlate_bandwidth = 15000; //14000; //24260.0;
+	float xlate_bandwidth = 14000; //14000; //24260.0;
 	float channel_rate = 4800 * samp_per_sym;
          double input_rate = samp_rate;
         float if_rate = 48000;
@@ -42,7 +42,7 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 
 
 
-	lpf_taps =  gr::filter::firdes::low_pass(1, samp_rate, 15000, 1500, gr::filter::firdes::WIN_HAMMING);
+	lpf_taps =  gr::filter::firdes::low_pass(1, samp_rate, xlate_bandwidth/2, 1500, gr::filter::firdes::WIN_HAMMING);
 
 	prefilter = gr::filter::freq_xlating_fir_filter_ccf::make(decim,
 	            lpf_taps,
@@ -82,7 +82,7 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
         arb_resampler = gr::filter::pfb_arb_resampler_ccf::make(arb_rate, arb_taps );
         
 
-	demod = gr::analog::quadrature_demod_cf::make(1.2); //1.6); //1.4);
+	demod = gr::analog::quadrature_demod_cf::make(1.0); //1.6); //1.4);
 	levels = gr::blocks::multiply_const_ff::make(1.0); //.40); //33);
 	valve = gr::blocks::copy::make(sizeof(gr_complex));
 	valve->set_enabled(false);
@@ -117,7 +117,7 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 
         costas_clock = gr::op25_repeater::gardner_costas_cc::make(omega, gain_mu, gain_omega, alpha,  beta, fmax, -fmax);
 
-        agc = gr::analog::feedforward_agc_cc::make(16, 1.0);
+        agc = gr::analog::feedforward_agc_cc::make(8, 1.0);
 
         // Perform Differential decoding on the constellation
         diffdec = gr::digital::diff_phasor_cc::make();
@@ -133,16 +133,18 @@ dsd_recorder::dsd_recorder(Source *src, long t, int n)
 
         
   	if (fsk4) {
-        dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_QPSK,4,1,1, false, num);
+        dsd = dsd_make_block_ff(dsd_FRAME_P25_PHASE_1,dsd_MOD_AUTO_SELECT,4,2,2, false, num);
 
         connect(self(),0, valve,0);
 		connect(valve,0, prefilter,0);
 		connect(prefilter, 0, arb_resampler, 0);
-		connect(arb_resampler, 0, demod, 0);
-        connect(demod, 0, dsd, 0);
-		//connect(demod, 0, sym_filter, 0);
-		//connect(sym_filter, 0, levels, 0);
-		//connect(levels, 0, dsd, 0);
+        connect(arb_resampler,0, agc,0);
+		connect(agc,  0, demod,0);
+		//connect(arb_resampler, 0, demod, 0);
+
+		connect(demod, 0, sym_filter, 0);
+		connect(sym_filter, 0, levels, 0);
+		connect(levels, 0, dsd, 0);
 		connect(dsd, 0, wav_sink,0);
         
         /*
